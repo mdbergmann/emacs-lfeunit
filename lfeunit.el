@@ -82,9 +82,7 @@
 (defun lfeunit-execute ()
   "Save buffers and execute command to run the tests."
   (interactive)
-  (message "Saving own buffer...")
   (save-buffer)
-  (message "Saving other buffers...")
   (save-some-buffers)
   (lfeunit-after-save-action))
 
