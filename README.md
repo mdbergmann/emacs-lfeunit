@@ -2,7 +2,8 @@
 
 This is a Emacs minor mode implementation to run LFE (ltest) tests using rebar3.
 
-Tests are actually run with `rebar3 as test lfe ltest`.
+Tests are actually run with `rebar3 as test lfe ltest -s 'the suite'`, so only tests of the current module are run.
+This is by design to allow a fast TDD workflow.
 
 There is no package on Elpa or Melpa.
 To install it clone this to some local folder and initialize like this in Emacs:
