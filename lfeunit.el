@@ -38,7 +38,8 @@
 (defvar-local *last-test* nil)
 (defvar-local *test-process* nil)
 
-(defvar lfeunit-rebar-executable "rebar3")
+(defvar lfeunit-test-cmd-base (split-string "rebar3 as test lfe test")
+  "The test command to execute.")
 
 (defvar *lfeunit-output-buf-name* "*LFEUnit output*")
 
@@ -86,7 +87,7 @@ PROC is the process. SIGNAL the signal from the process."
   "Call specific test. TEST-ARGS specifies a test to run."
   (message "Run with test args: %s" test-args)
   (let ((test-cmd-args (append
-                        (list lfeunit-rebar-executable "as" "test" "lfe" "ltest")
+                        lfeunit-test-cmd-base
                         test-args)))
     (message "Calling: %s" test-cmd-args)
     (let ((default-directory (lfeunit--project-root-dir)))
@@ -146,6 +147,12 @@ Specify optional SINGLE (T)) to try to run only a single test case."
     (lfeunit--execute-test-in-context test-args)
     (setq-local *last-test* test-args)))
 
+(defun lfeunit-custom-cmd ()
+  "Being prompted for a custom command to execute as test command."
+  (interactive)
+  (setq lfeunit-test-cmd-base (split-string
+                               (read-string "[lfeunit] Enter base test cmd: "))))
+
 (defun lfeunit-run ()
   "Save buffers and execute all test cases in the context."
   (interactive)
@@ -175,6 +182,7 @@ Specify optional SINGLE (T)) to try to run only a single test case."
   :keymap (let ((map (make-sparse-keymap)))
             (define-key map (kbd "C-c C-t") 'lfeunit-run)
             (define-key map (kbd "C-c C-r") 'lfeunit-run-last)
+            (define-key map (kbd "C-c C-p") 'lfeunit-custom-cmd)
             map))
 
 (provide 'lfeunit)

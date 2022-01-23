@@ -34,3 +34,5 @@ On other code or project it just saves the buffer.
 The key sequence: `C-c C-t` (or a custom defined one) will first save the buffer and then run the tests using `rebar3`.
 
 After the first execution of `lfeunit-run` you can view the "*LFEUnit output*" buffer for test output.
+
+Specify a base custom command using `lfeunit-custom-cmd`, i.e.: `rebar3 eunit`.
