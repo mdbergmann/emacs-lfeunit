@@ -100,7 +100,7 @@ PROC is the process. SIGNAL the signal from the process."
                           :sentinel 'lfeunit--process-sentinel))
       (message "Running: %s" test-args))))
 
-(defun lfeunit--compute-test-args (test-spec buffer-text current-point)
+(defun lfeunit--compute-test-args (test-spec buffer-text)
   "Calculates test-args as used in execute-in-context.
 TEST-SPEC is a given, previously executed test.
 When this is not null it'll be used.
@@ -142,8 +142,7 @@ Specify optional SINGLE (T)) to try to run only a single test case."
   
   (let ((test-args (lfeunit--compute-test-args
                     test-spec
-                    (lfeunit--get-buffer-text)
-                    (point))))
+                    (lfeunit--get-buffer-text))))
     (lfeunit--execute-test-in-context test-args)
     (setq-local *last-test* test-args)))
 
@@ -210,11 +209,11 @@ Specify optional SINGLE (T)) to try to run only a single test case."
   (let ((buffer-text ""))
     ;; return given test spec
     (cl-assert (string= "my-given-test-spec"
-                        (lfeunit--compute-test-args "my-given-test-spec" buffer-text 0))))
+                        (lfeunit--compute-test-args "my-given-test-spec" buffer-text))))
   (let ((buffer-text "(defmodule foo-bar-tests\n"))
     ;; return full test module
     (cl-assert (cl-equalp (list "-s" "foo-bar-tests")
-                          (lfeunit--compute-test-args nil buffer-text 0))))
+                          (lfeunit--compute-test-args nil buffer-text))))
   )
 
 (when lfeunit--run-tests
