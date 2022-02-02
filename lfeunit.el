@@ -38,7 +38,7 @@
 (defvar-local *last-test* nil)
 (defvar-local *test-process* nil)
 
-(defvar lfeunit-test-cmd-base (split-string "rebar3 as test lfe test")
+(defvar lfeunit-test-cmd-base (split-string "rebar3 as test lfe ltest")
   "The test command to execute.")
 
 (defvar *lfeunit-output-buf-name* "*LFEUnit output*")
