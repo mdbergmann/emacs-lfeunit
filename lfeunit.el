@@ -212,7 +212,7 @@ Specify optional SINGLE (T)) to try to run only a single test case."
                         (lfeunit--compute-test-args "my-given-test-spec" buffer-text))))
   (let ((buffer-text "(defmodule foo-bar-tests\n"))
     ;; return full test module
-    (cl-assert (cl-equalp (list "-s" "foo-bar-tests")
+    (cl-assert (cl-equalp (list "-m" "foo-bar-tests")
                           (lfeunit--compute-test-args nil buffer-text))))
   )
 
