@@ -38,7 +38,7 @@
 (defvar-local *last-test* nil)
 (defvar-local *test-process* nil)
 
-(defvar lfeunit-test-cmd-base (split-string "rebar3 as test lfe ltest")
+(defvar lfeunit-test-cmd-base (split-string "rebar3 as test eunit")
   "The test command to execute.")
 
 (defvar *lfeunit-output-buf-name* "*LFEUnit output*")
@@ -111,7 +111,7 @@ Only relevant if SINGLE is specified."
   (if (not (null test-spec))
       test-spec
     (let* ((test-module (lfeunit--find-module buffer-text))
-           (test-args (list "-s" test-module)))
+           (test-args (list "-m" test-module)))
       test-args)))
 
 (cl-defun lfeunit--get-buffer-text (&optional (beg 1) (end (point-max)))
