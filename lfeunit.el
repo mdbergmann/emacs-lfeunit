@@ -48,11 +48,33 @@
 This is usually the full designated module as per `defmodule'.
 BUFFER-TEXT is a string where the matching should take place."
   (let ((module-string (progn
-                         (string-match "(defmodule[ ]+\\(.+\\).*$"
+                         (string-match "(defmodule[ ]+\\([[:alpha:]|-]+\\).*$"
                                        buffer-text)
                          (match-string 1 buffer-text))))
     (message "Module to test: %s" module-string)
     module-string))
+
+(defun lfeunit--find-test-function (buffer-text curr-position)
+  "Parse the function for the test run.
+This is test function definition as per `deftest'.
+BUFFER-TEXT is a string where the matching should take place.
+CURR-POSITION is the current curser position in buffer."
+  (message "Finding test function in module.")
+  (with-temp-buffer
+    (insert buffer-text)
+    (goto-char curr-position)
+    (let ((found-point (search-backward "(deftest" nil t)))
+      (message "point: %s" found-point)
+      (if found-point
+          (let ((matches (string-match "(deftest[ ]+\\(.*\\)\n.*"
+                                       buffer-text
+                                       (- found-point 1))))
+            (message "matches: %s" matches)
+            (let* ((match (match-string 1 buffer-text))
+                   (test-function (format "%s_test"
+                                          (string-replace "-" "_" match))))
+              (message "Function to test: %s" test-function)
+              test-function))))))
 
 (defun lfeunit--project-root-dir ()
   "Return the project root directory."
@@ -100,18 +122,26 @@ PROC is the process. SIGNAL the signal from the process."
                           :sentinel 'lfeunit--process-sentinel))
       (message "Running: %s" test-args))))
 
-(defun lfeunit--compute-test-args (test-spec buffer-text)
+(defun lfeunit--compute-test-args (test-spec single buffer-text curr-point)
   "Calculates test-args as used in execute-in-context.
 TEST-SPEC is a given, previously executed test.
 When this is not null it'll be used.
 Otherwise we calculate a new test-spec, from module.
+SINGLE defines if single test function should run (t/nil).
 BUFFER-TEXT contains the buffer text as string without properties.
-CURRENT-POINT is the current cursor position.
+CURR-POINT is the current cursor position.
 Only relevant if SINGLE is specified."
   (if (not (null test-spec))
       test-spec
     (let* ((test-module (lfeunit--find-module buffer-text))
-           (test-args (list "-m" test-module)))
+           (test-args
+            (if single
+                (let ((test-function (lfeunit--find-test-function
+                                      buffer-text
+                                      curr-point)))
+                  (list "-t" (format "%s:%s" test-module test-function)))
+              (list "-m" test-module))))
+      (message "test args: %s" test-args)
       test-args)))
 
 (cl-defun lfeunit--get-buffer-text (&optional (beg 1) (end (point-max)))
@@ -126,7 +156,7 @@ Only relevant if SINGLE is specified."
   "Do some stuff when the test ran NOK."
   (message "%s" (propertize "Tests failed!" 'face '(:foreground "red"))))
 
-(cl-defun lfeunit--run-test (&optional (test-spec nil))
+(cl-defun lfeunit--run-test (&optional (test-spec nil) (single nil))
   "Execute the test.
 Specify optional TEST-SPEC if a specific test should be run.
 Specify optional SINGLE (T)) to try to run only a single test case."
@@ -142,7 +172,9 @@ Specify optional SINGLE (T)) to try to run only a single test case."
   
   (let ((test-args (lfeunit--compute-test-args
                     test-spec
-                    (lfeunit--get-buffer-text))))
+                    single
+                    (lfeunit--get-buffer-text)
+                    (point))))
     (lfeunit--execute-test-in-context test-args)
     (setq-local *last-test* test-args)))
 
@@ -152,11 +184,17 @@ Specify optional SINGLE (T)) to try to run only a single test case."
   (setq lfeunit-test-cmd-base (split-string
                                (read-string "[lfeunit] Enter base test cmd: "))))
 
-(defun lfeunit-run ()
+(defun lfeunit-run-all ()
   "Save buffers and execute all test cases in the context."
   (interactive)
   (when (lfeunit--run-preps)
     (lfeunit--run-test)))
+
+(defun lfeunit-run-single ()
+  "Save buffers and execute single test cases in the context."
+  (interactive)
+  (when (lfeunit--run-preps)
+    (lfeunit--run-test nil t)))
 
 (defun lfeunit-run-last ()
   "Save buffers and execute command to run the test."
@@ -179,7 +217,8 @@ Specify optional SINGLE (T)) to try to run only a single test case."
   "Bloop unit - test runner. Runs Bloop to execute tests."
   :lighter " LFEU"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c C-t") 'lfeunit-run)
+            (define-key map (kbd "C-c C-t") 'lfeunit-run-all)
+            (define-key map (kbd "C-c C-s") 'lfeunit-run-single)
             (define-key map (kbd "C-c C-r") 'lfeunit-run-last)
             (define-key map (kbd "C-c C-p") 'lfeunit-custom-cmd)
             map))
@@ -203,21 +242,38 @@ Specify optional SINGLE (T)) to try to run only a single test case."
     (cl-assert (string= "foo-bar-tests"
                         (lfeunit--find-module buffer-text)))))
 
+(defun lfeunit--test--find-test-function ()
+  "Test finding the test-case context - deftest."
+  (let ((buffer-text "some stuff
+  (deftest foo-bar-test
+    (is 'true))
+"))
+    (cl-assert (string= "foo_bar_test_test"
+                        (lfeunit--find-test-function buffer-text 40)))))
+
 (defun lfeunit--test--compute-test-args ()
   "Test computing test args."
   (message "lfeunit--test--compute-test-args...")
   (let ((buffer-text ""))
     ;; return given test spec
     (cl-assert (string= "my-given-test-spec"
-                        (lfeunit--compute-test-args "my-given-test-spec" buffer-text))))
+                        (lfeunit--compute-test-args "my-given-test-spec" nil buffer-text 0))))
   (let ((buffer-text "(defmodule foo-bar-tests\n"))
     ;; return full test module
     (cl-assert (cl-equalp (list "-m" "foo-bar-tests")
-                          (lfeunit--compute-test-args nil buffer-text))))
+                          (lfeunit--compute-test-args nil nil buffer-text 0))))
+  (let ((buffer-text "(defmodule foo-bar-tests)
+(deftest foo
+  (is 'true))
+)"))
+    ;; return modue:function
+    (cl-assert (cl-equalp (list "-t" "foo-bar-tests:foo_test")
+                          (lfeunit--compute-test-args nil t buffer-text 40))))
   )
 
 (when lfeunit--run-tests
   (lfeunit--test--find-test-module)
+  (lfeunit--test--find-test-function)
   (lfeunit--test--compute-test-args)
   )
 
