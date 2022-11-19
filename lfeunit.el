@@ -35,6 +35,9 @@
 (make-variable-buffer-local
  (defvar lfeunit-mode))
 
+(defvar lfeunit-test-failure-hook nil)
+(defvar lfeunit-test-success-hook nil)
+
 (defvar-local *last-test* nil)
 (defvar-local *test-process* nil)
 
@@ -150,10 +153,14 @@ Only relevant if SINGLE is specified."
 
 (defun lfeunit--handle-successful-test-result ()
   "Do some stuff when the test ran OK."
+  (message "LFEUNIT: running success hook!")
+  (run-hooks 'lfeunit-test-success-hook)
   (message "%s" (propertize "Tests OK" 'face '(:foreground "green"))))
 
 (defun lfeunit--handle-unsuccessful-test-result ()
   "Do some stuff when the test ran NOK."
+  (message "LFEUNIT: running failure hook!")
+  (run-hooks 'lfeunit-test-failure-hook)
   (message "%s" (propertize "Tests failed!" 'face '(:foreground "red"))))
 
 (cl-defun lfeunit--run-test (&optional (test-spec nil) (single nil))
