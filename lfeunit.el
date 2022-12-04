@@ -220,6 +220,7 @@ Specify optional SINGLE (T)) to try to run only a single test case."
       (message "Test still running. Try again when finished!")
       nil)))
 
+;;;###autoload
 (define-minor-mode lfeunit-mode
   "Bloop unit - test runner. Runs Bloop to execute tests."
   :lighter " LFEU"
